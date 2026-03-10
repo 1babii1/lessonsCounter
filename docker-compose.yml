@@ -5,6 +5,8 @@ services:
     image: mongo:latest
     container_name: lessonscounter_mongodb
     restart: always
+    networks:
+      - wedding-network
     ports:
       - "27019:27017"
     volumes:
@@ -18,6 +20,8 @@ services:
     restart: always
     depends_on:
       - mongodb
+    networks:
+      - wedding-network
     ports:
       - "5000:5000"
     environment:
@@ -34,6 +38,8 @@ services:
       dockerfile: Dockerfile
     container_name: lessonscounter_frontend
     restart: always
+    networks:
+      - wedding-network
     depends_on:
       - backend
     ports:
@@ -41,3 +47,7 @@ services:
 
 volumes:
   mongodb_data:
+
+networks:
+  wedding-network:
+    name: wedding-network

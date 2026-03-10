@@ -21,9 +21,7 @@ app.get("/", (req, res) => {
 
 // Database connection
 mongoose
-  .connect(
-    process.env.MONGODB_URI ? "" : "mongodb://mongo:27017/lessons_counter",
-  )
+  .connect(process.env.MONGODB_URI ?? "mongodb://mongo:27017/lessons_counter")
   .then(() => {
     console.log("Connected to MongoDB");
     app.listen(PORT, () => {

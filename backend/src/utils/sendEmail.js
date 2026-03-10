@@ -1,23 +1,33 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
 const sendEmail = async (options) => {
-    const transporter = nodemailer.createTransport({
-        service: 'gmail', // You can change this to your preferred service
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-        },
-    });
+  // DEBUG: покажите переменные
+  console.log("EMAIL_USER:", process.env.EMAIL_USER);
+  console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "***SET***" : "EMPTY");
 
-    const mailOptions = {
-        from: `"LessonsCounter" <${process.env.EMAIL_USER}>`,
-        to: options.email,
-        subject: options.subject,
-        text: options.message,
-        html: options.html,
-    };
+  const transporter = nodemailer.createTransporter({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+    // Gmail требует TLS
+    secure: false,
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
 
-    await transporter.sendMail(mailOptions);
+  const mailOptions = {
+    from: `"LessonsCounter" <${process.env.EMAIL_USER}>`,
+    to: options.email,
+    subject: options.subject,
+    text: options.message,
+    html: options.html,
+  };
+
+  await transporter.sendMail(mailOptions);
+  console.log("Email sent successfully");
 };
 
 module.exports = sendEmail;

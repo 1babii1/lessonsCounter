@@ -7,8 +7,6 @@ services:
     restart: always
     networks:
       - wedding-network
-    ports:
-      - "27019:27017"
     volumes:
       - mongodb_data:/data/db
 
@@ -22,8 +20,6 @@ services:
       - mongodb
     networks:
       - wedding-network
-    ports:
-      - "5000:5000"
     environment:
       - PORT=5000
       - MONGODB_URI=mongodb://mongodb:27017/lessons_counter
@@ -42,8 +38,6 @@ services:
       - wedding-network
     depends_on:
       - backend
-    ports:
-      - "7080:80"
 
 volumes:
   mongodb_data:

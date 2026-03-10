@@ -14,7 +14,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    env_file: ./backend/.env
     container_name: lessonscounter_backend
     restart: always
     depends_on:

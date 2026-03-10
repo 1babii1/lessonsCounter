@@ -526,12 +526,6 @@ const getStyles = (theme) =>
       borderRadius: 12,
       alignItems: "center",
       width: "80%",
-      maximumScale: 1,
-      minimumScale: 1,
-      userScalable: false,
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
     },
     modalTitle: {
       fontSize: 18,

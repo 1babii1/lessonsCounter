@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, Modal, Button } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../theme/ThemeContext';
 import api from '../api/config';
@@ -13,6 +13,15 @@ export default function DashboardScreen() {
     const [loading, setLoading] = useState(true);
     const [newGroupName, setNewGroupName] = useState('');
     const [newStudentNames, setNewStudentNames] = useState({}); // { groupId: 'studentName' }
+
+    // modal state for adding a number of lessons
+    const [lessonModal, setLessonModal] = useState({ visible: false, groupId: null, studentId: null, amount: '1' });
+
+    // modal state for history view
+    const [historyModal, setHistoryModal] = useState({ visible: false, history: [], studentName: '' });
+
+    // confirmation dialog modal
+    const [confirmModal, setConfirmModal] = useState({ visible: false, message: '', onConfirm: null });
 
     useEffect(() => {
         fetchGroups();
@@ -78,13 +87,39 @@ export default function DashboardScreen() {
     };
 
     const handleAddLessons = (groupId, studentId) => {
-        let inputAmount = "1";
-        // In a real mobile app, we would use a modal or prompt here.
-        // For React Native Web, window.prompt is an easy native-feeling fallback
-        const result = window.prompt("Enter number of lessons to add:", "1");
-        if (result !== null && !isNaN(parseInt(result)) && parseInt(result) > 0) {
-            updateLessons(groupId, studentId, parseInt(result));
+        setLessonModal({ visible: true, groupId, studentId, amount: '1' });
+    };
+
+    const submitAddLessons = () => {
+        const amt = parseInt(lessonModal.amount);
+        if (!isNaN(amt) && amt > 0) {
+            updateLessons(lessonModal.groupId, lessonModal.studentId, amt);
         }
+        setLessonModal({ visible: false, groupId: null, studentId: null, amount: '1' });
+    };
+
+    const cancelAddLessons = () => {
+        setLessonModal({ visible: false, groupId: null, studentId: null, amount: '1' });
+    };
+
+    const openHistory = async (student) => {
+        try {
+            const res = await api.get(`/students/${student._id}/history`);
+            setHistoryModal({ visible: true, history: res.data, studentName: student.name });
+        } catch (e) {
+            Alert.alert('Error', 'Failed to load history');
+        }
+    };
+
+    const handleRemoveLesson = (groupId, studentId) => {
+        setConfirmModal({
+            visible: true,
+            message: 'Are you sure you want to deduct one lesson from this student?',
+            onConfirm: () => {
+                updateLessons(groupId, studentId, -1);
+                setConfirmModal(prev => ({ ...prev, visible: false }));
+            }
+        });
     };
 
     const styles = getStyles(theme);
@@ -157,9 +192,15 @@ export default function DashboardScreen() {
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         style={[styles.actionButton, { backgroundColor: theme.error }]}
-                                        onPress={() => updateLessons(group._id, student._id, -1)}
+                                        onPress={() => handleRemoveLesson(group._id, student._id)}
                                     >
                                         <Text style={styles.actionButtonText}>- 1</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.actionButton, { backgroundColor: theme.primary }]}
+                                        onPress={() => openHistory(student)}
+                                    >
+                                        <Text style={styles.actionButtonText}>📜</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -170,6 +211,72 @@ export default function DashboardScreen() {
                     <Text style={styles.emptyText}>No groups found. Create one to get started!</Text>
                 )}
             </ScrollView>
+
+            {/* add lessons modal */}
+            <Modal
+                visible={lessonModal.visible}
+                transparent
+                animationType="slide"
+                onRequestClose={cancelAddLessons}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>Add Lessons</Text>
+                        <TextInput
+                            style={[styles.input, { marginBottom: 20, width: 100, textAlign: 'center' }]}
+                            keyboardType="numeric"
+                            value={lessonModal.amount}
+                            onChangeText={(t) => setLessonModal(prev => ({ ...prev, amount: t }))}
+                        />
+                        <View style={{ flexDirection: 'row' }}>
+                            <Button title="Cancel" onPress={cancelAddLessons} />
+                            <Button title="OK" onPress={submitAddLessons} />
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* history modal */}
+            <Modal
+                visible={historyModal.visible}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setHistoryModal(prev => ({ ...prev, visible: false }))}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>History for {historyModal.studentName}</Text>
+                        <ScrollView style={{ maxHeight: 300, width: '100%' }}>
+                            {historyModal.history.length === 0 && <Text>No history</Text>}
+                            {historyModal.history.map((h, idx) => (
+                                <Text key={idx} style={styles.historyLine}>
+                                    {new Date(h.date).toLocaleString()}: {h.change > 0 ? '+' : ''}{h.change}
+                                </Text>
+                            ))}
+                        </ScrollView>
+                        <Button title="Close" onPress={() => setHistoryModal(prev => ({ ...prev, visible: false }))} />
+                    </View>
+                </View>
+            </Modal>
+
+            {/* confirmation modal */}
+            <Modal
+                visible={confirmModal.visible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setConfirmModal(prev => ({ ...prev, visible: false }))}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>Confirm</Text>
+                        <Text style={{ marginBottom: 20, color: theme.text }}>{confirmModal.message}</Text>
+                        <View style={{ flexDirection: 'row' }}>
+                            <Button title="Cancel" onPress={() => setConfirmModal(prev => ({ ...prev, visible: false }))} />
+                            <Button title="Yes" onPress={() => confirmModal.onConfirm && confirmModal.onConfirm()} />
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -305,5 +412,28 @@ const getStyles = (theme) => StyleSheet.create({
         color: theme.textSecondary,
         marginTop: 40,
         fontSize: 16,
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContainer: {
+        backgroundColor: theme.surface,
+        padding: 20,
+        borderRadius: 12,
+        alignItems: 'center',
+        width: '80%',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 10,
+        color: theme.text,
+    },
+    historyLine: {
+        color: theme.text,
+        marginBottom: 5,
     }
 });

@@ -16,6 +16,13 @@ const studentSchema = new mongoose.Schema({
         ref: 'Group',
         required: true,
     },
+    // history of lesson modifications
+    history: [
+        {
+            change: { type: Number, required: true }, // positive for add, negative for removal
+            date: { type: Date, default: Date.now },
+        },
+    ],
 }, { timestamps: true });
 
 module.exports = mongoose.model('Student', studentSchema);

@@ -45,8 +45,32 @@ exports.updateLessons = async (req, res) => {
         student.lessonsCount += amount;
         if (student.lessonsCount < 0) student.lessonsCount = 0; // Prevent negative lessons
 
+        // record history entry
+        if (!student.history) student.history = [];
+        student.history.push({ change: amount });
+
         await student.save();
         res.json(student);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// new controller for history
+exports.getHistory = async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.id);
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        // verify group belongs to user
+        const group = await Group.findById(student.group);
+        if (!group || group.user.toString() !== req.user._id.toString()) {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
+
+        res.json(student.history || []);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
